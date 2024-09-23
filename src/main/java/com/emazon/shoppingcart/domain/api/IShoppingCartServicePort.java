@@ -7,6 +7,7 @@ import java.time.LocalDate;
 public interface IShoppingCartServicePort {
 
     void addItemShoppingCart(ItemShoppingCart itemShoppingCart);
+    void removeItemShoppingCart(Long idArticle);
 
 
 }

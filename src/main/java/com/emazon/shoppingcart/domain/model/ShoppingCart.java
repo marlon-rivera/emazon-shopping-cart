@@ -9,12 +9,11 @@ public class ShoppingCart {
     private Long id;
     private String idClient;
     private List<ItemShoppingCart> items = new ArrayList<>();
-    private LocalDate modificationDate;
+    private LocalDate modificationDate = LocalDate.now();
 
     public ShoppingCart(Long id, String idClient) {
         this.id = id;
         this.idClient = idClient;
-        this.modificationDate = modificationDate;
     }
 
     public Long getId() {
@@ -45,8 +44,8 @@ public class ShoppingCart {
         items.add(item);
     }
 
-    public void removeItem(ItemShoppingCart item) {
-        items.remove(item);
+    public void removeItem(Long idArticle) {
+        items.removeIf(item -> item.getIdArticle().equals(idArticle));
     }
 
     public List<ItemShoppingCart> getItems() {

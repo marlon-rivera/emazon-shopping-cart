@@ -33,4 +33,9 @@ public class ShoppingCartAdapter implements IShoppingCartPersistencePort {
     public Optional<ShoppingCart> getShoppingCartByIdClient(String idClient) {
         return shoppingCartEntityMapper.toOptionalShoppingCart(shoppingCartRepository.findShoppingCartEntityByIdClient(idClient));
     }
+
+    @Override
+    public void removeItemShoppingCart(ShoppingCart shoppingCart) {
+        shoppingCartRepository.save(shoppingCartEntityMapper.toShoppingCartEntity(shoppingCart));
+    }
 }

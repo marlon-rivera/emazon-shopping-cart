@@ -46,11 +46,28 @@ public class ShoppingCartController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/")
-    public ResponseEntity<String> removeFromShoppingCart(){
-        return ResponseEntity.ok("Soy usuario eliminar");
+    @Operation(
+            summary = "Remove item from shopping cart",
+            description = "This endpoint allows you to remove an item from the shopping cart by specifying the item's ID."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Item removed from the shopping cart successfully.",
+            content = @Content
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Item not found in the shopping cart.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error while processing the request.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponse.class))
+    )
+    @DeleteMapping("/{idArticle}")
+    public ResponseEntity<String> removeFromShoppingCart(@PathVariable("idArticle") Long id) {
+        shoppingCartServicePort.removeItemShoppingCart(id);
+        return ResponseEntity.ok().build();
     }
-
-
-
 }

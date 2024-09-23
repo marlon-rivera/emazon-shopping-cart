@@ -89,4 +89,17 @@ class ShoppingCartAdapterTest {
 
         assertFalse(result.isPresent());
     }
+
+    @Test
+    void removeItemShoppingCart_shouldSaveUpdatedShoppingCart() {
+        ShoppingCart shoppingCart = new ShoppingCart(1L, "client123");
+        ShoppingCartEntity shoppingCartEntity = new ShoppingCartEntity();
+
+
+        when(shoppingCartEntityMapper.toShoppingCartEntity(shoppingCart)).thenReturn(shoppingCartEntity);
+
+        shoppingCartAdapter.removeItemShoppingCart(shoppingCart);
+
+        verify(shoppingCartRepository).save(shoppingCartEntity);
+    }
 }

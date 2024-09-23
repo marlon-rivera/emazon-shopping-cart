@@ -31,17 +31,45 @@ public class ShoppingCartUseCaseImpl implements IShoppingCartServicePort {
         verifyQuantityItemShoppingCart(itemShoppingCart);
         String idClient = authenticationPort.getCurrentUsername();
         ShoppingCart shoppingCart = getShoppingCartByIdClient(idClient);
-        Optional<ItemShoppingCart> existingItem = findItemShoppingCart(shoppingCart, itemShoppingCart);
-        if(existingItem.isPresent()) {
-            if(existingItem.get().getQuantity().equals(itemShoppingCart.getQuantity())) {
-                return;
-            }
-            validateCategoriesItems(shoppingCart.getItems(), itemShoppingCart);
-            existingItem.get().setQuantity(itemShoppingCart.getQuantity());
-        }else{
+
+        Optional<ItemShoppingCart> existingItem = findItemShoppingCart(shoppingCart, itemShoppingCart.getIdArticle());
+
+        if (existingItem.isPresent()) {
+            updateExistingItem(existingItem.get(), itemShoppingCart, shoppingCart);
+        } else {
             validateCategoriesItems(shoppingCart.getItems(), itemShoppingCart);
             shoppingCart.addItem(itemShoppingCart);
         }
+
+        updateShoppingCart(shoppingCart);
+    }
+
+    @Override
+    public void removeItemShoppingCart(Long idArticle) {
+        String idClient = authenticationPort.getCurrentUsername();
+        ShoppingCart shoppingCart = getShoppingCartByIdClient(idClient);
+
+        if (!shoppingCart.getItems().isEmpty()) {
+            removeItemFromCart(idArticle, shoppingCart);
+        }
+    }
+
+    private void removeItemFromCart(Long idArticle, ShoppingCart shoppingCart) {
+        Optional<ItemShoppingCart> itemShoppingCartOptional = findItemShoppingCart(shoppingCart, idArticle);
+        itemShoppingCartOptional.ifPresent(item -> {
+            shoppingCart.getItems().remove(item);
+            updateShoppingCart(shoppingCart);
+        });
+    }
+
+    private void updateExistingItem(ItemShoppingCart existingItem, ItemShoppingCart newItem, ShoppingCart shoppingCart) {
+        if (!existingItem.getQuantity().equals(newItem.getQuantity())) {
+            validateCategoriesItems(shoppingCart.getItems(), newItem);
+            existingItem.setQuantity(newItem.getQuantity());
+        }
+    }
+
+    private void updateShoppingCart(ShoppingCart shoppingCart) {
         shoppingCart.setModificationDate(LocalDate.now());
         shoppingCartPersistencePort.saveShoppingCart(shoppingCart);
     }
@@ -52,44 +80,45 @@ public class ShoppingCartUseCaseImpl implements IShoppingCartServicePort {
                 .orElseGet(() -> new ShoppingCart(null, idClient));
     }
 
-    private Optional<ItemShoppingCart> findItemShoppingCart(ShoppingCart shoppingCart, ItemShoppingCart itemShoppingCart) {
+    private Optional<ItemShoppingCart> findItemShoppingCart(ShoppingCart shoppingCart, Long idArticle) {
         return shoppingCart.getItems().stream()
-                .filter(item -> item.getIdArticle().equals(itemShoppingCart.getIdArticle()))
+                .filter(item -> item.getIdArticle().equals(idArticle))
                 .findFirst();
     }
 
     private void verifyQuantityItemShoppingCart(ItemShoppingCart itemShoppingCart) {
-        if(itemShoppingCart.getQuantity().compareTo(BigInteger.ZERO) == BigInteger.ZERO.intValue()){
+        if (itemShoppingCart.getQuantity().compareTo(BigInteger.ZERO) <= 0) {
             throw new ShoppingCartQuantityNotZeroException();
         }
-        BigInteger quantityAvalaible = stockClient.getQuantityItemShoppingCart(itemShoppingCart);
-        if(quantityAvalaible.compareTo(BigInteger.ZERO) == BigInteger.ZERO.intValue()){
+        BigInteger quantityAvailable = stockClient.getQuantityItemShoppingCart(itemShoppingCart);
+        if (quantityAvailable.compareTo(BigInteger.ZERO) <= 0) {
             LocalDate lastDeliveryDate = getLastDeliveryDateofArticle(itemShoppingCart.getIdArticle());
-            throw new ShoppingCartUnitsNotAvalaibleException(lastDeliveryDate == null ? LocalDate.now().toString() : lastDeliveryDate.toString());
+            throw new ShoppingCartUnitsNotAvalaibleException(
+                    lastDeliveryDate == null ? LocalDate.now().toString() : lastDeliveryDate.toString()
+            );
         }
-        if(quantityAvalaible.compareTo(itemShoppingCart.getQuantity()) < BigInteger.ZERO.intValue()) {
+        if (quantityAvailable.compareTo(itemShoppingCart.getQuantity()) < 0) {
             throw new ShoppingCartUnitsNotAvalaibleException();
         }
     }
 
     private void validateCategoriesItems(List<ItemShoppingCart> items, ItemShoppingCart itemShoppingCart) {
         List<Long> categoriesItemAdd = stockClient.getCategoriesOfArticle(itemShoppingCart.getIdArticle());
-        for (Long categoryId: categoriesItemAdd) {
-            int countCateogry = 0;
-            for (ItemShoppingCart item : items) {
-                List<Long> idsCategories = stockClient.getCategoriesOfArticle(item.getIdArticle());
-                if(idsCategories.contains(categoryId)) {
-                    countCateogry++;
-                }
-            }
-            if(countCateogry == Constants.MAXIMUM_ARTICLES_BY_CATEGORY){
+
+        for (Long categoryId : categoriesItemAdd) {
+            if (countItemsByCategory(items, categoryId) >= Constants.MAXIMUM_ARTICLES_BY_CATEGORY) {
                 throw new ShoppinCartMaximumArticlesByCategoryException();
             }
-
         }
     }
 
-    private LocalDate getLastDeliveryDateofArticle(Long idArticle){
+    private int countItemsByCategory(List<ItemShoppingCart> items, Long categoryId) {
+        return (int) items.stream()
+                .filter(item -> stockClient.getCategoriesOfArticle(item.getIdArticle()).contains(categoryId))
+                .count();
+    }
+
+    private LocalDate getLastDeliveryDateofArticle(Long idArticle) {
         return supplyClient.getLastDeliveryDateofArticle(idArticle);
     }
 }

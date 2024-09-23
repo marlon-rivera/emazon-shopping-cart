@@ -18,7 +18,7 @@ public class ShoppingCartEntity {
     private Long id;
     @Column(nullable = false)
     private String idClient;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shoppingCart")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shoppingCart", orphanRemoval = true)
     private List<ItemShoppingCartEntity> items = new ArrayList<>();
     @Column(nullable = false)
     private LocalDate modificationDate;
@@ -27,4 +27,5 @@ public class ShoppingCartEntity {
         items.add(itemShoppingCart);
         itemShoppingCart.setShoppingCart(this);
     }
+
 }
