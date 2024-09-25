@@ -19,4 +19,15 @@ public class Constants {
     public static final String EXCEPTION_SHOPPING_CART_UNITS_NOT_AVALAIBLE = "La cantidad solicitada del articulo no se encuentra en stock.";
     public static final String EXCEPTION_SHOPPING_CART_UNITS_ZERO = "En estos momentos el articulo se encuentra sin stock, la proxima fecha de abastecimiento es: ";
     public static final int DAYS_OF_NEXT_SUPPLY = 15;
+    public static final int ZERO = 0;
+    public static final String ORDER_ASC = "ASC";
+    public static final String DEFAULT_VALUE_SIZE_PAGE = "10";
+    public static final String DEFAULT_VALUE_NUMBER_PAGE = "0";
+    public static final int MIN_VALUES_PER_PAGE = 1;
+    public static final int MIN_VALUE_PAGE = 0;
+    public static final String REGEX_ORDER = "ASC|DESC";
+    public static final String EXCEPTION_MIN_VALUES_PER_PAGE = "El minimo de resultados por pagina es de 1.";
+    public static final String EXCEPTION_MIN_VALUE_PAGE = "El numero de pagina minimo es 0.";
+    public static final String EXCEPTION_REGEX_ORDER = "No se encontró el orden solicitado.";
+    public static final String EXCEPTION_SHOPPING_CART_ARTICLES_NOT_FOUND = "No tiene articulos en su carrito con los criterios dados.";
 }

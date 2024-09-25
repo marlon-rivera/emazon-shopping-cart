@@ -8,12 +8,14 @@ import com.emazon.shoppingcart.adapters.driven.feign.SupplyFeignAdapter;
 import com.emazon.shoppingcart.adapters.driven.jpa.mysql.adapter.ShoppingCartAdapter;
 import com.emazon.shoppingcart.adapters.driven.jpa.mysql.mapper.IShoppingCartEntityMapper;
 import com.emazon.shoppingcart.adapters.driven.jpa.mysql.repository.IShoppingCartRepository;
+import com.emazon.shoppingcart.adapters.driving.http.mapper.response.IArticleResponseMapper;
 import com.emazon.shoppingcart.domain.api.IShoppingCartServicePort;
 import com.emazon.shoppingcart.domain.api.usecase.ShoppingCartUseCaseImpl;
 import com.emazon.shoppingcart.domain.spi.IAuthenticationPort;
 import com.emazon.shoppingcart.domain.spi.IShoppingCartPersistencePort;
 import com.emazon.shoppingcart.domain.spi.IStockClient;
 import com.emazon.shoppingcart.domain.spi.ISupplyClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,7 @@ public class BeanConfiguration {
     private final IShoppingCartEntityMapper shoppingCartEntityMapper;
     private final IStockFeignClient stockFeignClient;
     private final ISupplyFeignClient supplyFeignClient;
+    private final IArticleResponseMapper articleResponseMapper;
 
     @Bean
     public IAuthenticationPort authenticationPort() {
@@ -34,7 +37,7 @@ public class BeanConfiguration {
 
     @Bean
     public IStockClient stockClient() {
-        return new StockFeignAdapter(stockFeignClient);
+        return new StockFeignAdapter(stockFeignClient, articleResponseMapper);
     }
 
     @Bean

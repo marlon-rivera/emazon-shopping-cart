@@ -1,6 +1,7 @@
 package com.emazon.shoppingcart.configuration.exceptionhandler;
 
 import com.emazon.shoppingcart.domain.exception.ShoppinCartMaximumArticlesByCategoryException;
+import com.emazon.shoppingcart.domain.exception.ShoppingCartNoArticlesFoundException;
 import com.emazon.shoppingcart.domain.exception.ShoppingCartQuantityNotZeroException;
 import com.emazon.shoppingcart.domain.exception.ShoppingCartUnitsNotAvalaibleException;
 import com.emazon.shoppingcart.utils.Constants;
@@ -39,6 +40,13 @@ public class ShoppingCartControllerAdvisor {
         }
         return ResponseEntity.badRequest().body(
                 new ExceptionResponse(message, HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now())
+        );
+    }
+
+    @ExceptionHandler(ShoppingCartNoArticlesFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleShoppingCartNoArticlesFoundException(ShoppingCartNoArticlesFoundException ex) {
+        return ResponseEntity.badRequest().body(
+                new ExceptionResponse(Constants.EXCEPTION_SHOPPING_CART_ARTICLES_NOT_FOUND, HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now())
         );
     }
 

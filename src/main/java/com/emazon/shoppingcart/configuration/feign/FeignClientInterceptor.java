@@ -27,4 +27,5 @@ public class FeignClientInterceptor implements RequestInterceptor {
         }
         return null;
     }
+
 }

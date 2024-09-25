@@ -2,10 +2,10 @@ package com.emazon.shoppingcart.domain.api.usecase;
 
 import com.emazon.shoppingcart.domain.api.IShoppingCartServicePort;
 import com.emazon.shoppingcart.domain.exception.ShoppinCartMaximumArticlesByCategoryException;
+import com.emazon.shoppingcart.domain.exception.ShoppingCartNoArticlesFoundException;
 import com.emazon.shoppingcart.domain.exception.ShoppingCartQuantityNotZeroException;
 import com.emazon.shoppingcart.domain.exception.ShoppingCartUnitsNotAvalaibleException;
-import com.emazon.shoppingcart.domain.model.ItemShoppingCart;
-import com.emazon.shoppingcart.domain.model.ShoppingCart;
+import com.emazon.shoppingcart.domain.model.*;
 import com.emazon.shoppingcart.domain.spi.IAuthenticationPort;
 import com.emazon.shoppingcart.domain.spi.IShoppingCartPersistencePort;
 import com.emazon.shoppingcart.domain.spi.IStockClient;
@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -181,5 +182,74 @@ class ShoppingCartUseCaseImplTest {
 
         verify(shoppingCartPersistencePort, never()).removeItemShoppingCart(any());
         assertTrue(shoppingCart.getItems().isEmpty());
+    }
+
+    @Test
+     void testGetArticlesOfShoppingCart_Success() {
+        String idClient = "test-client";
+        List<ItemShoppingCart> items = List.of(
+                new ItemShoppingCart(1L, 1L, BigInteger.TWO),
+                new ItemShoppingCart(2L, 2L, BigInteger.ONE)
+        );
+        List<Article> articles = List.of(
+                new Article(1L, "Article 1", "", 5, new BigDecimal(100), new Brand(1L, "", "")),
+                new Article(2L, "Article 2", "", 5, new BigDecimal(50), new Brand(1L, "", ""))
+        );
+
+        PaginationInfo<Article> articlesPagination = new PaginationInfo<>(articles, 0, 10, 2, 1, false, false);
+
+        ShoppingCart shoppingCart = new ShoppingCart(1L, idClient);
+        shoppingCart.setItems(items);
+
+        when(authenticationPort.getCurrentUsername()).thenReturn(idClient);
+        when(shoppingCartPersistencePort.getShoppingCartByIdClient(idClient)).thenReturn(Optional.of(shoppingCart));
+        when(stockClient.getArticlesOfShoppingCart(anyInt(), anyInt(), anyList(), anyString(), anyList(), anyList())).thenReturn(articlesPagination);
+
+        ArticlesShoppingCart result = shoppingCartUseCase.getArticlesOfShoppingCart(0, 10, "ASC", List.of(), List.of());
+
+        assertNotNull(result);
+        assertEquals(articlesPagination, result.getArticles());
+        assertEquals(new BigDecimal(250), result.getTotalPrice());
+
+        assertEquals(2, articles.get(0).getQuantityRequired());
+        assertEquals(1, articles.get(1).getQuantityRequired());
+    }
+
+    @Test
+    void testGetArticlesOfShoppingCart_NoArticlesFound() {
+        String idClient = "test-client";
+        List<ItemShoppingCart> items = List.of( new ItemShoppingCart(1L, 1L, BigInteger.TWO));
+        ShoppingCart shoppingCart = new ShoppingCart(1L, idClient);
+        shoppingCart.setItems(items);
+
+        when(authenticationPort.getCurrentUsername()).thenReturn(idClient);
+        when(shoppingCartPersistencePort.getShoppingCartByIdClient(idClient)).thenReturn(Optional.of(shoppingCart));
+        when(stockClient.getArticlesOfShoppingCart(anyInt(), anyInt(), anyList(), anyString(), anyList(), anyList()))
+                .thenReturn(new PaginationInfo<>(List.of(), 0, 0, 0, 0, false, false));
+
+        assertThrows(ShoppingCartNoArticlesFoundException.class, () -> {
+            shoppingCartUseCase.getArticlesOfShoppingCart(0, 10, "ASC", List.of(), List.of());
+        });
+    }
+
+    @Test
+    void testGetArticlesOfShoppingCart_AssignDeliveryDateIfOutOfStock() {
+        String idClient = "test-client";
+        List<ItemShoppingCart> items = List.of(new ItemShoppingCart(1L, 1L, BigInteger.TWO));
+        Article articleOutOfStock = new Article(1L, "Article 1", "", 0, new BigDecimal(100), new Brand(1L, "", ""));
+
+        PaginationInfo<Article> articlesPagination = new PaginationInfo<>(List.of(articleOutOfStock), 1, 10, 1, 0, false, false);
+        ShoppingCart shoppingCart = new ShoppingCart(1L, idClient);
+        shoppingCart.setItems(items);
+
+        when(authenticationPort.getCurrentUsername()).thenReturn(idClient);
+        when(shoppingCartPersistencePort.getShoppingCartByIdClient(idClient)).thenReturn(Optional.of(shoppingCart));
+        when(stockClient.getArticlesOfShoppingCart(anyInt(), anyInt(), anyList(), anyString(), anyList(), anyList()))
+                .thenReturn(articlesPagination);
+
+        ArticlesShoppingCart result = shoppingCartUseCase.getArticlesOfShoppingCart(0, 10, "ASC", List.of(), List.of());
+
+        assertNotNull(articleOutOfStock.getDeliveryDate());
+
     }
 }
