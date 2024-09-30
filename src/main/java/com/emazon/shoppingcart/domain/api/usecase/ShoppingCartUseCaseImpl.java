@@ -1,15 +1,9 @@
 package com.emazon.shoppingcart.domain.api.usecase;
 
 import com.emazon.shoppingcart.domain.api.IShoppingCartServicePort;
-import com.emazon.shoppingcart.domain.exception.ShoppinCartMaximumArticlesByCategoryException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartNoArticlesFoundException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartQuantityNotZeroException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartUnitsNotAvalaibleException;
+import com.emazon.shoppingcart.domain.exception.*;
 import com.emazon.shoppingcart.domain.model.*;
-import com.emazon.shoppingcart.domain.spi.IAuthenticationPort;
-import com.emazon.shoppingcart.domain.spi.IShoppingCartPersistencePort;
-import com.emazon.shoppingcart.domain.spi.IStockClient;
-import com.emazon.shoppingcart.domain.spi.ISupplyClient;
+import com.emazon.shoppingcart.domain.spi.*;
 import com.emazon.shoppingcart.utils.Constants;
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +21,7 @@ public class ShoppingCartUseCaseImpl implements IShoppingCartServicePort {
     private final IAuthenticationPort authenticationPort;
     private final IStockClient stockClient;
     private final ISupplyClient supplyClient;
+    private final IReportClient reportClient;
 
     @Override
     public void addItemShoppingCart(ItemShoppingCart itemShoppingCart) {
@@ -59,17 +54,47 @@ public class ShoppingCartUseCaseImpl implements IShoppingCartServicePort {
     @Override
     public ArticlesShoppingCart getArticlesOfShoppingCart(int page, int size, String order, List<Long> idsCategories, List<Long> idsBrands) {
         String idClient = authenticationPort.getCurrentUsername();
+
         ShoppingCart shoppingCart = shoppingCartPersistencePort.getShoppingCartByIdClient(idClient).orElseThrow();
+
         List<ItemShoppingCart> items = shoppingCart.getItems();
+
         List<Long> idsArticles = getIdsArticlesOfShoppingCart(items);
+
         PaginationInfo<Article> articlesPagination = stockClient.getArticlesOfShoppingCart(page, size, idsArticles, order, idsCategories, idsBrands);
+
         if(articlesPagination.getList().isEmpty()) throw new ShoppingCartNoArticlesFoundException();
         articlesPagination.getList().forEach(article -> {
             assignQuantityRequired(article, items);
             assignDeliveryDateIfOutOfStock(article);
         });
+
         BigDecimal totalPrice = calculateTotalPriceShoppingCart(page, size, order, idsArticles, items);
+
         return new ArticlesShoppingCart(articlesPagination, totalPrice);
+    }
+
+    @Override
+    public void purchase() {
+        String idClient = authenticationPort.getCurrentUsername();
+        ShoppingCart shoppingCart = getShoppingCartByIdClient(idClient);
+        List<ItemShoppingCart> items = shoppingCart.getItems();
+        List<Long> idsArticles = getIdsArticlesOfShoppingCart(items);
+        List<BigInteger> quantities = getQuantitiesOfArticles(items);
+        reportClient.saveReport();
+
+        try{
+            reportClient.updateReport(Constants.STATUS_VERIFY);
+            stockClient.purchase(new PurchaseRequest(idsArticles, quantities));
+            reportClient.updateReport(Constants.STATUS_COMPLETE);
+            shoppingCart.getItems().clear();
+            shoppingCartPersistencePort.saveShoppingCart(shoppingCart);
+        }catch (ArticleInsufficientStockToPurchaseException e){
+            reportClient.updateReport(Constants.STATUS_CANCEL);
+            throw e;
+        }
+
+
     }
 
     private BigDecimal calculateTotalPriceShoppingCart(int page, int size, String order, List<Long> idsArticles, List<ItemShoppingCart> items) {
@@ -88,6 +113,14 @@ public class ShoppingCartUseCaseImpl implements IShoppingCartServicePort {
             idsArticles.add(itemShoppingCart.getIdArticle());
         }
         return idsArticles;
+    }
+
+    private List<BigInteger> getQuantitiesOfArticles(List<ItemShoppingCart> items){
+        List<BigInteger> quantities = new ArrayList<>();
+        for (ItemShoppingCart item : items){
+            quantities.add(item.getQuantity());
+        }
+        return quantities;
     }
 
     private void assignQuantityRequired(Article article, List<ItemShoppingCart> items) {

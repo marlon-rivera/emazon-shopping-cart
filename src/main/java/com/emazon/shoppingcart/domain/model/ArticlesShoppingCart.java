@@ -1,7 +1,5 @@
 package com.emazon.shoppingcart.domain.model;
 
-import com.emazon.shoppingcart.utils.Constants;
-
 import java.math.BigDecimal;
 
 public class ArticlesShoppingCart {

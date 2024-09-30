@@ -1,10 +1,11 @@
 package com.emazon.shoppingcart.configuration.exceptionhandler;
 
-import com.emazon.shoppingcart.domain.exception.ShoppinCartMaximumArticlesByCategoryException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartNoArticlesFoundException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartQuantityNotZeroException;
-import com.emazon.shoppingcart.domain.exception.ShoppingCartUnitsNotAvalaibleException;
+import com.emazon.shoppingcart.domain.exception.*;
 import com.emazon.shoppingcart.utils.Constants;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -15,6 +16,9 @@ import java.time.LocalDateTime;
 
 @ControllerAdvice
 public class ShoppingCartControllerAdvisor {
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @ExceptionHandler(ShoppinCartMaximumArticlesByCategoryException.class)
     public ResponseEntity<ExceptionResponse> handleShoppinCartMaximumArticlesByCategoryException(ShoppinCartMaximumArticlesByCategoryException ex) {
@@ -47,6 +51,13 @@ public class ShoppingCartControllerAdvisor {
     public ResponseEntity<ExceptionResponse> handleShoppingCartNoArticlesFoundException(ShoppingCartNoArticlesFoundException ex) {
         return ResponseEntity.badRequest().body(
                 new ExceptionResponse(Constants.EXCEPTION_SHOPPING_CART_ARTICLES_NOT_FOUND, HttpStatus.BAD_REQUEST.toString(), LocalDateTime.now())
+        );
+    }
+
+    @ExceptionHandler(ArticleInsufficientStockToPurchaseException.class)
+    public ResponseEntity<ExceptionResponse> handleArticleInsufficientStockToPurchaseException(ArticleInsufficientStockToPurchaseException ex) throws JsonProcessingException {
+        return ResponseEntity.badRequest().body(
+                objectMapper.readValue(ex.getMessage(), ExceptionResponse.class)
         );
     }
 

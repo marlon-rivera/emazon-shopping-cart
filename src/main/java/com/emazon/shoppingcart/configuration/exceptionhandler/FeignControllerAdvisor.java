@@ -28,4 +28,14 @@ public class FeignControllerAdvisor {
 
     }
 
+    @ExceptionHandler(FeignException.BadRequest.class)
+    public ResponseEntity<ExceptionResponse> handleBadRequestException(FeignException.BadRequest ex) {
+        System.out.println("Aqui");
+        System.out.println(ex.getMessage());
+        return new ResponseEntity<>(
+                new ExceptionResponse(Constants.EXCEPTION_SHOPPING_CART_ARTICLE_NOT_FOUND, HttpStatus.NOT_FOUND.toString(), LocalDateTime.now()), HttpStatus.NOT_FOUND
+        );
+
+    }
+
 }

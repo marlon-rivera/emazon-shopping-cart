@@ -30,4 +30,7 @@ public class Constants {
     public static final String EXCEPTION_MIN_VALUE_PAGE = "El numero de pagina minimo es 0.";
     public static final String EXCEPTION_REGEX_ORDER = "No se encontró el orden solicitado.";
     public static final String EXCEPTION_SHOPPING_CART_ARTICLES_NOT_FOUND = "No tiene articulos en su carrito con los criterios dados.";
+    public static final String STATUS_VERIFY = "VERIFYING";
+    public static final String STATUS_COMPLETE = "COMPLETED";
+    public static final String STATUS_CANCEL = "CANCELLED";
 }

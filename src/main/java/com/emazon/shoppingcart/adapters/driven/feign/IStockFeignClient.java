@@ -2,12 +2,9 @@ package com.emazon.shoppingcart.adapters.driven.feign;
 
 import com.emazon.shoppingcart.adapters.driving.http.dto.response.ArticleResponse;
 import com.emazon.shoppingcart.adapters.driving.http.dto.response.PaginationInfoResponse;
-import com.emazon.shoppingcart.domain.model.Article;
-import com.emazon.shoppingcart.domain.model.PaginationInfo;
+import com.emazon.shoppingcart.domain.model.PurchaseRequest;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -30,5 +27,8 @@ public interface IStockFeignClient {
             @RequestParam("idsCategories") List<Long> idsCategories,
             @RequestParam("idsBrands") List<Long> idsBrands
     );
+
+    @PostMapping("/purchase")
+    void purchase(@RequestBody PurchaseRequest purchaseRequest);
 
 }

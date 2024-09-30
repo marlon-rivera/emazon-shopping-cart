@@ -119,4 +119,10 @@ public class ShoppingCartController {
         );
     }
 
+    @PostMapping("/purchase")
+    public ResponseEntity<Void> purchase(){
+        shoppingCartServicePort.purchase();
+        return ResponseEntity.ok().build();
+    }
+
 }
